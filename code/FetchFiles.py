@@ -21,3 +21,21 @@ def getPage(URL, outputPath=None):
         output = subprocess.run(args + [URL], capture_output=True)
         return output.stdout.decode()
 
+
+# Find and get the contents of a tag in a string
+#
+# searchString: the string to search in
+# tagName: the name of the tag to get the contents of
+# returns: String of the contents or None on failure
+def parseTagContents(searchString, tagName):
+    # Find the end of the opening tag, which is the start of the content
+    start = searchString.find("<" + tagName)
+    if start == -1:
+        return
+    # Find where the opening tag ends, and set the start to that
+    start += searchString[start:].find(">") + 1
+
+    end = searchString.find("</" + tagName + ">")
+    if end == -1:
+        return
+    return searchString[start:end]
