@@ -39,3 +39,39 @@ def parseTagContents(searchString, tagName):
     if end == -1:
         return
     return searchString[start:end]
+
+
+# Parse all episode information into a list of dictionaries
+# feed: the RSS feed as a string
+# Returns: dictionary with title, guid, enclosure(link to audio, length, and type), duration, pubDate or None on failure
+def parseAllEpisodeInfo(feed):
+    if feed.find("<rss") == -1:
+        return
+
+    episodeInfos = []
+    currentIndex = 0
+    while (True):
+        # Get one episode tag at a time, break when we can't find any more
+        episode = parseTagContents(feed[currentIndex:], "item")
+        if episode is None:
+            break
+
+        # Get the information from the tags
+        episodeInfo = dict()
+        for value in ["title", "guid", "pubDate", "itunes:duration", "description"]:
+            episodeInfo[value] = parseTagContents(episode, value)
+
+        # Get the enclosure information
+        enclosureText = episode[episode.find("<enclosure ") + len("<enclosure "):]
+        enclosureText = enclosureText[:enclosureText.find("/>")]
+        enclosureValues = dict()
+        enclosureList = enclosureText.split(" ")
+        for value in enclosureList:
+            keyValue = value.split("=")
+            enclosureValues[keyValue[0]] = keyValue[1][1:-1]
+        episodeInfo["enclosure"] = enclosureValues
+
+        episodeInfos.append(episodeInfo)
+        currentIndex += feed[currentIndex:].find("</item>") + 7
+
+    return episodeInfos
