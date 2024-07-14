@@ -75,3 +75,20 @@ def parseAllEpisodeInfo(feed):
         currentIndex += feed[currentIndex:].find("</item>") + 7
 
     return episodeInfos
+
+
+# Parse the headers for the feed and return them as a dictionary
+# feed: the RSS feed as a string
+# Returns: dictionary with most tags as strings, and image as a dict
+def parseHeaders(feed):
+    headers = dict()
+    for tagName in ["ttl", "generator", "title", "language", "copyright", "description"]:
+        headers[tagName] = parseTagContents(feed, tagName)
+
+    imageTagContents = parseTagContents(feed, "image")
+    imageDict = dict()
+    for tagName in ["url", "link", "title"]:
+        imageDict[tagName] = parseTagContents(imageTagContents, tagName)
+    headers["image"] = imageDict
+
+    return headers
