@@ -10,6 +10,12 @@
 from FetchFiles import getPage, parseHeaders
 import time
 from datetime import datetime
+import urllib.parse
+from configparser import ConfigParser
+
+# Get the config
+config = ConfigParser()
+config.read("data/config.cfg")
 
 def getTime():
     return datetime.now().strftime('%H:%M')
@@ -37,10 +43,12 @@ for feedLink in feedList:
 
     # Create the new feed, starting with the headers
     headers = parseHeaders(targetFeed)
+    newFeedUrl = config["Main"]["hostname"] + "/" + urllib.parse.quote(headers["title"])
+
     newFeed = f"""<rss version=\"2.0\">
     <channel>
         <title>{headers["title"]}</title>
-        <link>https://google.com</link>
+        <link>{newFeedUrl}</link>
         <description>{headers["description"]}</description>
     </channel>"""
     print(newFeed)
