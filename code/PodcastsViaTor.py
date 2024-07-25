@@ -12,6 +12,7 @@ import time
 from datetime import datetime
 import urllib.parse
 from configparser import ConfigParser
+import os
 
 # Get the config
 config = ConfigParser()
@@ -20,6 +21,13 @@ config.read("data/config.cfg")
 def getTime():
     return datetime.now().strftime('%H:%M')
 
+
+def makeAlphanumeric(text):
+    newText = ""
+    for char in text:
+        if char.lower() in "abcdefghijklmnopqrstuvwxyz1234567890":
+            newText += char
+    return newText
 
 # Get the config
 config = ConfigParser()
@@ -43,7 +51,7 @@ for feedLink in feedList:
 
     # Create the new feed, starting with the headers
     headers = parseHeaders(targetFeed)
-    newFeedUrl = config["Main"]["hostname"] + "/" + urllib.parse.quote(headers["title"])
+    newFeedUrl = config["Main"]["hostname"] + "/" + makeAlphanumeric(headers["title"])
 
     newFeed = f"""<rss version=\"2.0\">
     <channel>
@@ -52,6 +60,10 @@ for feedLink in feedList:
         <description>{headers["description"]}</description>
     </channel>"""
     print(newFeed)
+
+    # Create a folder for the feed if we don't have one
+    feedPath = "data/podcasts/" + makeAlphanumeric(headers["title"])
+    os.makedirs(feedPath, exist_ok = True)
 
     # Get the feed image if we don't have it
 
