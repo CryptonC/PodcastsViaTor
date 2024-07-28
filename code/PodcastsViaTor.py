@@ -57,15 +57,25 @@ for feedLink in feedList:
     <channel>
         <title>{headers["title"]}</title>
         <link>{newFeedUrl}</link>
-        <description>{headers["description"]}</description>
-    </channel>"""
-    print(newFeed)
+        <description>{headers["description"]}</description>"""
 
     # Create a folder for the feed if we don't have one
     feedPath = "data/podcasts/" + makeAlphanumeric(headers["title"])
     os.makedirs(feedPath, exist_ok = True)
 
     # Get the feed image if we don't have it
+    thumbnailName = headers["image"]["url"].split("/")[-1]
+    if not os.path.exists(feedPath + "/" + thumbnailName):
+        print(f"[{getTime()}] Getting podcast image")
+        getPage(headers["image"]["url"], feedPath + "/" + thumbnailName)
+    newFeed += f"""
+        <image>
+            <url>{newFeedUrl + "/" + thumbnailName}</url>
+            <title>{headers["image"]["title"]}</title>
+            <link>{newFeedUrl}</link>
+        </image>
+    </channel>"""
+    print(newFeed)
 
     # Get a list of all episodes
 
