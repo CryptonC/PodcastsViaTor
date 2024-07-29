@@ -12,6 +12,10 @@ import time
 from datetime import datetime
 from configparser import ConfigParser
 import os
+import http.server
+import socketserver
+
+WEB_PORT = 80
 
 # Get the config
 config = ConfigParser()
@@ -111,3 +115,12 @@ for feedLink in feedList:
     # Save the new feed
     with open(feedPath + "/feed.txt", "w") as feedFile:
         feedFile.write(newFeed)
+
+# Start up the web server
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory="/work/data/podcasts", **kwargs)
+
+with socketserver.TCPServer(("", WEB_PORT), Handler) as httpserver:
+    print(f"[{getTime()}] Started web server on port {WEB_PORT}")
+    httpserver.serve_forever()
