@@ -106,6 +106,8 @@ for feedLink in feedList:
     newFeed += """
     </channel>
 </rss>"""
-    print(newFeed)
+    print(f"[{getTime()}] Feed created")
 
     # Save the new feed
+    with open(feedPath + "/feed.txt", "w") as feedFile:
+        feedFile.write(newFeed)
