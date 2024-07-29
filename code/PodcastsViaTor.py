@@ -7,10 +7,9 @@
 # * curl
 # * python3
 
-from FetchFiles import getPage, parseHeaders
+from FetchFiles import getPage, parseHeaders, parseAllEpisodeInfo
 import time
 from datetime import datetime
-import urllib.parse
 from configparser import ConfigParser
 import os
 
@@ -73,16 +72,40 @@ for feedLink in feedList:
             <url>{newFeedUrl + "/" + thumbnailName}</url>
             <title>{headers["image"]["title"]}</title>
             <link>{newFeedUrl}</link>
-        </image>
-    </channel>"""
-    print(newFeed)
+        </image>"""
 
     # Get a list of all episodes
+    episodeList = parseAllEpisodeInfo(targetFeed)
 
     # For each episode
+    for episode in episodeList:
+        # Create file name
+        # Get the file extension at the end of the url
+        episodeFileExtension = episode["enclosure"]["url"].split(".")[-1]
+        # Make sure the file name only has alphanumeric characters
+        episodeFilename = makeAlphanumeric(episode["title"])
+        if len(episodeFilename) > 250:
+            episodeFilename = episodeFilename[:250]
+        episodeFilename = episodeFilename + "." + episodeFileExtension
 
         # Check if we have the episode downloaded already. If we don't, download it
+        episodePath = feedPath + "/" + episodeFilename
+        if not os.path.exists(episodePath):
+            print(f'[{getTime()}] Downloading file for: {episode["title"]}')
+            getPage(episode["enclosure"]["url"], episodePath)
 
         # Add the episode information
+        newFeed += f"""
+        <item>
+            <title>{episode['title']}</title>
+            <pubDate>{episode['pubDate']}</pubDate>
+            <description>{episode['description']}</description>
+            <enclosure url="{newFeedUrl}/{episodeFilename}" length="{episode['enclosure']['length']}" type="{episode['enclosure']['type']}"/>
+        </item>"""
+
+    newFeed += """
+    </channel>
+</rss>"""
+    print(newFeed)
 
     # Save the new feed
