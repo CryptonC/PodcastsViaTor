@@ -54,6 +54,7 @@ class podcastFetch(threading.Thread):
             # For each feed
             for feedLink in feedList:
                 feedLink = feedLink.strip()
+                print(f"[{getTime()}] Getting feed: {feedLink}")
                 # Get the feed
                 targetFeed = getPage(feedLink)
                 while targetFeed is None:
@@ -91,34 +92,39 @@ class podcastFetch(threading.Thread):
 
                 # For each episode
                 for episode in episodeList:
-                    # Create file name
-                    # Get the file extension at the end of the url
-                    episodeFileExtension = episode["enclosure"]["url"].split(".")[-1]
-                    # Make sure the file name only has alphanumeric characters
-                    episodeFilename = makeAlphanumeric(episode["title"])
-                    if len(episodeFilename) > 250:
-                        episodeFilename = episodeFilename[:250]
-                    episodeFilename = episodeFilename + "." + episodeFileExtension
-
-                    # Check if we have the episode downloaded already. If we don't, download it
-                    episodePath = feedPath + "/" + episodeFilename
-                    if not os.path.exists(episodePath):
-                        print(f'[{getTime()}] Downloading file for: {episode["title"]}')
-                        getPage(episode["enclosure"]["url"], episodePath)
-
-                    # Add the episode information
+                    print(f"[{getTime()}] Adding episode {episode['title']}")
                     newFeed += f"""
         <item>
             <title>{episode['title']}</title>
             <pubDate>{episode['pubDate']}</pubDate>
-            <description>{episode['description']}</description>
-            <enclosure url="{newFeedUrl}/{episodeFilename}" length="{episode['enclosure']['length']}" type="{episode['enclosure']['type']}"/>
+            <description>{episode['description']}</description>"""
+
+                    if episode["enclosure"] is not None:
+                        # Create file name
+                        # Get the file extension at the end of the url
+                        episodeFileExtension = episode["enclosure"]["url"].split(".")[-1]
+                        # Make sure the file name only has alphanumeric characters
+                        episodeFilename = makeAlphanumeric(episode["title"])
+                        if len(episodeFilename) > 250:
+                            episodeFilename = episodeFilename[:250]
+                        episodeFilename = episodeFilename + "." + episodeFileExtension
+
+                        # Check if we have the episode downloaded already. If we don't, download it
+                        episodePath = feedPath + "/" + episodeFilename
+                        if not os.path.exists(episodePath):
+                            print(f'[{getTime()}] Downloading file for: {episode["title"]}')
+                            getPage(episode["enclosure"]["url"], episodePath)
+
+                        # Add the episode information
+                        newFeed += f"""
+            <enclosure url="{newFeedUrl}/{episodeFilename}" length="{episode['enclosure']['length']}" type="{episode['enclosure']['type']}"/>"""
+                    newFeed += """
         </item>"""
 
                 newFeed += """
     </channel>
 </rss>"""
-                print(f"[{getTime()}] Feed created")
+                print(f"[{getTime()}] {headers['title']} feed created")
 
                 # Save the new feed
                 with open(feedPath + "/feed.txt", "w") as feedFile:

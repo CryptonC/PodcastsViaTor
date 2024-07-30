@@ -62,14 +62,19 @@ def parseAllEpisodeInfo(feed):
             episodeInfo[value] = parseTagContents(episode, value)
 
         # Get the enclosure information
-        enclosureText = episode[episode.find("<enclosure ") + len("<enclosure "):]
-        enclosureText = enclosureText[:enclosureText.find("/>")]
-        enclosureValues = dict()
-        enclosureList = enclosureText.split(" ")
-        for value in enclosureList:
-            keyValue = value.split("=")
-            enclosureValues[keyValue[0]] = keyValue[1][1:-1]
-        episodeInfo["enclosure"] = enclosureValues
+        if episode.find("<enclosure ") == -1:
+            episodeInfo["enclosure"] = None
+        else:
+            enclosureText = episode[episode.find("<enclosure ") + len("<enclosure "):]
+            enclosureText = enclosureText[:enclosureText.find("/>")]
+            enclosureValues = dict()
+            enclosureList = enclosureText.split(" ")
+            for value in enclosureList:
+                if value.find("=") == -1:
+                    continue
+                keyValue = value.split("=")
+                enclosureValues[keyValue[0]] = keyValue[1][1:-1]
+            episodeInfo["enclosure"] = enclosureValues
 
         episodeInfos.append(episodeInfo)
         currentIndex += feed[currentIndex:].find("</item>") + 7
@@ -79,8 +84,11 @@ def parseAllEpisodeInfo(feed):
 
 # Parse the headers for the feed and return them as a dictionary
 # feed: the RSS feed as a string
-# Returns: dictionary with most tags as strings, and image as a dict
+# Returns: dictionary with most tags as strings, and image as a dict. None on failure
 def parseHeaders(feed):
+    if feed.find("<rss") == -1:
+        return
+
     headers = dict()
     for tagName in ["ttl", "generator", "title", "language", "copyright", "description"]:
         headers[tagName] = parseTagContents(feed, tagName)
