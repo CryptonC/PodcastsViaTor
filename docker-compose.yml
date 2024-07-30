@@ -1,0 +1,8 @@
+services:
+    PodcastsViaTor:
+        image: podcastsviator
+        ports:
+            - 8000:80
+        volumes:
+            - ./data:/work/data
+        restart: unless-stopped
