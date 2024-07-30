@@ -53,6 +53,7 @@ class podcastFetch(threading.Thread):
 
             # For each feed
             for feedLink in feedList:
+                feedLink = feedLink.strip()
                 # Get the feed
                 targetFeed = getPage(feedLink)
                 while targetFeed is None:
