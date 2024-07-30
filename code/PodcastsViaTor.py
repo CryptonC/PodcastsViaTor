@@ -55,6 +55,9 @@ class podcastFetch(threading.Thread):
             for feedLink in feedList:
                 # Get the feed
                 targetFeed = getPage(feedLink)
+                while targetFeed is None:
+                    print(f"[{getTime()}] Retrying fetching feed")
+                    targetFeed = getPage(feedLink)
 
                 # Create the new feed, starting with the headers
                 headers = parseHeaders(targetFeed)
