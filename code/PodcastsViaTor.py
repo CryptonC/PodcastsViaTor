@@ -15,6 +15,7 @@ import os
 import http.server
 import socketserver
 import threading
+import traceback
 
 WEB_PORT = 80
 
@@ -132,8 +133,11 @@ def fetchAllFeeds():
 class podcastFetch(threading.Thread):
     def run(self):
         while True:
-            fetchAllFeeds()
-            time.sleep(int(config["Main"]["refreshInterval"]))
+            try:
+                fetchAllFeeds()
+                time.sleep(int(config["Main"]["refreshInterval"]))
+            except:
+                print(traceback.format_exc())
 
 # Start the podcast fetcher
 fetcher = podcastFetch()
