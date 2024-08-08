@@ -3,23 +3,35 @@
 
 # Dependencies:
 # * Tor
-# * torsocks
-# * curl
 # * python3
+# * python3 requests
+# * python3 requests[socks]
 
-import subprocess
+import requests
+import random
 
 TOR_IP='127.0.0.1'
 TOR_PORT='9050'
 FAKE_USER_AGENT='Mozilla/5.0 (Windows NT 6.1) AppleWebKit/602.1 (KHTML, like Gecko) QuiteRSS/0.18.12 Safari/602.1'
 
 def getPage(URL, outputPath=None):
-    args = ['torsocks','--address',TOR_IP,'--port',TOR_PORT,'-i','curl','-L','--user-agent',FAKE_USER_AGENT]
-    if outputPath is not None:
-        subprocess.run(args + ["--output",outputPath,URL])
+    session = requests.session()
+    # We provide a random 'username' to the Tor proxy in order to get a random exit address
+    torAddress = f'socks5://{random.randint(1,999999)}:password@{TOR_IP}:{TOR_PORT}'
+    session.proxies = {'http':  torAddress,
+                       'https': torAddress}
+
+    headers = {"User-Agent": FAKE_USER_AGENT}
+
+    if outputPath is None:
+        response = session.get(URL, headers=headers)
+        return response.text
     else:
-        output = subprocess.run(args + [URL], capture_output=True)
-        return output.stdout.decode()
+        response = session.get(URL, headers=headers, stream=True)
+        response.raise_for_status()
+        with open(outputPath, "wb") as fd:
+            for chunk in response.iter_content(chunk_size=8192):
+                fd.write(chunk)
 
 
 # Find and get the contents of a tag in a string

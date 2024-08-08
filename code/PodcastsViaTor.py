@@ -3,9 +3,9 @@
 
 # Dependencies:
 # * Tor
-# * torsocks
-# * curl
 # * python3
+# * python3 requests
+# * python3 requests[socks]
 
 from FetchFiles import getPage, parseHeaders, parseAllEpisodeInfo
 import time
