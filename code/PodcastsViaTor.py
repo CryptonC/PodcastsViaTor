@@ -6,8 +6,9 @@
 # * python3
 # * python3 requests
 # * python3 requests[socks]
+# * python3 selenium
 
-from FetchFiles import getPage, parseHeaders, parseAllEpisodeInfo
+from FetchFiles import getPage, parseHeaders, parseAllEpisodeInfo, AudioDownloader
 import time
 from datetime import datetime
 from configparser import ConfigParser
@@ -18,10 +19,6 @@ import threading
 import traceback
 
 WEB_PORT = 80
-
-# Get the config
-config = ConfigParser()
-config.read("data/config.cfg")
 
 def getTime():
     return datetime.now().strftime('%Y/%m/%d %H:%M')
@@ -46,7 +43,7 @@ while "Congratulations. This browser is configured to use Tor." not in torCheckR
     torCheckReturn = getPage("https://check.torproject.org/")
 print(f"[{getTime()}] Tor check succeeded!")
 
-def fetchAllFeeds():
+def fetchAllFeeds(audioDownloader):
     # Get the target feed links
     feedList = open("data/feeds.txt", "r")
 
@@ -118,7 +115,7 @@ def fetchAllFeeds():
                 if not os.path.exists(episodePath):
                     noNewEpisodes = False
                     print(f'[{getTime()}] Downloading file for: {episode["title"]}')
-                    getPage(episode["enclosure"]["url"], episodePath)
+                    audioDownloader.download(episode["enclosure"]["url"], episodePath)
 
                 # Add the episode information
                 newFeed += f"""
@@ -141,9 +138,10 @@ def fetchAllFeeds():
 
 class podcastFetch(threading.Thread):
     def run(self):
+        audioDownloader = AudioDownloader()
         while True:
             try:
-                fetchAllFeeds()
+                fetchAllFeeds(audioDownloader)
                 time.sleep(int(config["Main"]["refreshInterval"]))
             except:
                 print(traceback.format_exc())

@@ -6,13 +6,83 @@
 # * python3
 # * python3 requests
 # * python3 requests[socks]
+# * python3 selenium
 
 import requests
 import random
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
+import time
+import os
+import shutil
 
 TOR_IP='127.0.0.1'
 TOR_PORT='9050'
 FAKE_USER_AGENT='Mozilla/5.0 (Windows NT 6.1) AppleWebKit/602.1 (KHTML, like Gecko) QuiteRSS/0.18.12 Safari/602.1'
+FILE_POLL_INTERVAL=0.25
+EMPTY_PAGE_SOURCE = "<html><head></head><body></body></html>"
+
+
+class AudioDownloader:
+    # Initialize the web browser driver for use in getting web pages and files
+    def __init__(self):
+        # Make sure download directory exists
+        if not os.path.isdir("download"):
+            os.makedirs("download")
+
+        options = Options()
+        options.add_argument("-headless")
+        options.set_preference("media.play-stand-alone", False)
+        options.set_preference("browser.download.folderList", 2)
+        options.set_preference("browser.download.dir", os.getcwd() + "/download")
+        options.set_preference("network.proxy.type", 1)
+        options.set_preference("network.proxy.socks", TOR_IP)
+        options.set_preference("network.proxy.socks_port", TOR_PORT)
+        options.page_load_strategy = "none"
+
+        service = webdriver.FirefoxService(executable_path="/usr/local/bin/geckodriver")
+
+        self.driver = webdriver.Firefox(options=options, service=service)
+
+
+    def quit(self):
+        self.driver.quit()
+
+
+    def download(self, targetURL, destination):
+        if self.driver is None:
+            raise RuntimeError("Driver not initialized")
+
+        preDownloadFiles = os.listdir(path="download")
+        self.driver.get(targetURL)
+
+        # Check for a new file. This should be the download starting. I welcome a better solution
+        newFile = None
+        while newFile is None:
+            time.sleep(FILE_POLL_INTERVAL)
+            for listedFile in os.listdir(path="download"):
+                if listedFile not in preDownloadFiles and not listedFile.endswith(".part"):
+                    newFile = listedFile
+                    break
+
+            # Verify the page is just a file
+            if self.driver.page_source != EMPTY_PAGE_SOURCE:
+                print(self.driver.page_source)
+                raise TypeError("Page did not return downloadable file. Check the URL and proxy settings")
+
+        # Check for a .part file. This will be present until the download is complete
+        partFileExists = True
+        while partFileExists:
+            time.sleep(FILE_POLL_INTERVAL)
+            partFileExists = False
+            for listedFile in os.listdir(path="download"):
+                if listedFile.endswith(".part"):
+                    partFileExists = True
+                    break
+
+        # Move the downloaded file to the destination
+        shutil.move("download/" + newFile, destination)
+
 
 def getPage(URL, outputPath=None):
     session = requests.session()
