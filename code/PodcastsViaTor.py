@@ -75,7 +75,10 @@ def fetchAllFeeds():
         os.makedirs(feedPath, exist_ok = True)
 
         # Get the feed image if we don't have it
-        thumbnailName = headers["image"]["url"].split("/")[-1]
+        # Remove any GET parameters
+        thumbnailName = headers["image"]["url"].split("?")[0]
+        thumbnailName = thumbnailName.split("/")[-1]
+
         if not os.path.exists(feedPath + "/" + thumbnailName):
             print(f"[{getTime()}] Getting podcast image")
             getPage(headers["image"]["url"], feedPath + "/" + thumbnailName)
@@ -101,7 +104,9 @@ def fetchAllFeeds():
             if episode["enclosure"] is not None:
                 # Create file name
                 # Get the file extension at the end of the url
-                episodeFileExtension = episode["enclosure"]["url"].split(".")[-1]
+                # Remove any GET parameters
+                episodeFileExtension = episode["enclosure"]["url"].split("?")[0]
+                episodeFileExtension = episodeFileExtension.split(".")[-1]
                 # Make sure the file name only has alphanumeric characters
                 episodeFilename = makeAlphanumeric(episode["title"])
                 if len(episodeFilename) > 250:
