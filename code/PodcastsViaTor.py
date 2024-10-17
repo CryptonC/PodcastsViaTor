@@ -24,7 +24,7 @@ config = ConfigParser()
 config.read("data/config.cfg")
 
 def getTime():
-    return datetime.now().strftime('%H:%M')
+    return datetime.now().strftime('%Y/%m/%d %H:%M')
 
 
 def makeAlphanumeric(text):
@@ -92,9 +92,9 @@ def fetchAllFeeds():
         # Get a list of all episodes
         episodeList = parseAllEpisodeInfo(targetFeed)
 
+        noNewEpisodes = True
         # For each episode
         for episode in episodeList:
-            print(f"[{getTime()}] Adding episode {episode['title']}")
             newFeed += f"""
         <item>
             <title>{episode['title']}</title>
@@ -116,6 +116,7 @@ def fetchAllFeeds():
                 # Check if we have the episode downloaded already. If we don't, download it
                 episodePath = feedPath + "/" + episodeFilename
                 if not os.path.exists(episodePath):
+                    noNewEpisodes = False
                     print(f'[{getTime()}] Downloading file for: {episode["title"]}')
                     getPage(episode["enclosure"]["url"], episodePath)
 
@@ -124,6 +125,9 @@ def fetchAllFeeds():
             <enclosure url="{newFeedUrl}/{episodeFilename}" length="{episode['enclosure']['length']}" type="{episode['enclosure']['type']}"/>"""
             newFeed += """
         </item>"""
+
+        if noNewEpisodes:
+            print(f"[{getTime()}] No new episodes for {headers['title']}")
 
         newFeed += """
     </channel>
