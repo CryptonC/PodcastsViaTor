@@ -96,6 +96,7 @@ def fetchAllFeeds(audioDownloader):
         <item>
             <title>{episode['title']}</title>
             <pubDate>{episode['pubDate']}</pubDate>
+            <guid isPermaLink="false">{episode['guid']}</guid>
             <description>{episode['description']}</description>"""
 
             if episode["enclosure"] is not None:

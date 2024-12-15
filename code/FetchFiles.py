@@ -140,7 +140,7 @@ def parseAllEpisodeInfo(feed):
 
         # Get the information from the tags
         episodeInfo = dict()
-        for value in ["title", "guid", "pubDate", "itunes:duration", "description"]:
+        for value in ["title", "guid", "pubDate", "itunes:duration", "description", "guid"]:
             episodeInfo[value] = parseTagContents(episode, value)
 
         # Get the enclosure information
