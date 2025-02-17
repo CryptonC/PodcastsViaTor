@@ -88,8 +88,17 @@ def fetchAllFeeds(audioDownloader):
 
         # Get a list of all episodes
         episodeList = parseAllEpisodeInfo(targetFeed)
+        # Cut the list down to the maximum amount
+        episodeLimit = int(config["Main"]["episodeLimit"])
+        if episodeLimit != 0:
+            episodeList = episodeList[:episodeLimit]
 
         noNewEpisodes = True
+        # Make a set for storing episode file names, used for cleaning out older files. Includes thumbnail and feed file
+        episodeFilenames = set()
+        episodeFilenames.add(thumbnailName)
+        episodeFilenames.add("feed.txt")
+
         # For each episode
         for episode in episodeList:
             newFeed += f"""
@@ -118,11 +127,21 @@ def fetchAllFeeds(audioDownloader):
                     print(f'[{getTime()}] Downloading file for: {episode["title"]}')
                     audioDownloader.download(episode["enclosure"]["url"], episodePath)
 
+                # Add the episode filename to the set
+                episodeFilenames.add(episodeFilename)
+
                 # Add the episode information
                 newFeed += f"""
             <enclosure url="{newFeedUrl}/{episodeFilename}" length="{episode['enclosure']['length']}" type="{episode['enclosure']['type']}"/>"""
             newFeed += """
         </item>"""
+
+        # Clear out old files
+        if feedLink in config["Main"]["cleanupFeeds"].split(","):
+            for feedFile in os.listdir(feedPath):
+                if not feedFile in episodeFilenames:
+                    print(f"[{getTime()}] Cleaning up {feedFile}")
+                    os.remove(f"{feedPath}/{feedFile}")
 
         if noNewEpisodes:
             print(f"[{getTime()}] No new episodes for {headers['title']}")
