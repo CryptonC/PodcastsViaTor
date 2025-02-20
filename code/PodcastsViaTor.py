@@ -17,6 +17,7 @@ import http.server
 import socketserver
 import threading
 import traceback
+from string import Template
 
 WEB_PORT = 80
 
@@ -30,6 +31,31 @@ def makeAlphanumeric(text):
         if char.lower() in "abcdefghijklmnopqrstuvwxyz1234567890":
             newText += char
     return newText
+
+
+feedTemplate = Template("""<rss version=\"2.0\">
+    <channel>
+        <title>${title}</title>
+        <link>${link}</link>
+        <description>${description}</description>
+        <image>
+            <url>${imageUrl}</url>
+            <title>${imageTitle}</title>
+            <link>${imageLink}</link>
+        </image>${items}
+    </channel>
+</rss>""")
+
+itemTemplate = Template("""
+        <item>
+            <title>${title}</title>
+            <pubDate>${pubDate}</pubDate>
+            <guid isPermaLink="false">${guid}</guid>
+            <description>${description}</description>
+            ${enclosure}
+        </item>""")
+
+enclosureTemplate = Template("""<enclosure url="${url}" length="${length}" type="${type}"/>""")
 
 # Get the config
 config = ConfigParser()
@@ -57,15 +83,9 @@ def fetchAllFeeds(audioDownloader):
             print(f"[{getTime()}] Retrying fetching feed")
             targetFeed = getPage(feedLink)
 
-        # Create the new feed, starting with the headers
+        # Get the headers, for the new feed
         headers = parseHeaders(targetFeed)
         newFeedUrl = config["Main"]["hostname"] + "/" + makeAlphanumeric(headers["title"])
-
-        newFeed = f"""<rss version=\"2.0\">
-    <channel>
-        <title>{headers["title"]}</title>
-        <link>{newFeedUrl}</link>
-        <description>{headers["description"]}</description>"""
 
         # Create a folder for the feed if we don't have one
         feedPath = "data/podcasts/" + makeAlphanumeric(headers["title"])
@@ -79,12 +99,6 @@ def fetchAllFeeds(audioDownloader):
         if not os.path.exists(feedPath + "/" + thumbnailName):
             print(f"[{getTime()}] Getting podcast image")
             getPage(headers["image"]["url"], feedPath + "/" + thumbnailName)
-        newFeed += f"""
-        <image>
-            <url>{newFeedUrl + "/" + thumbnailName}</url>
-            <title>{headers["image"]["title"]}</title>
-            <link>{newFeedUrl}</link>
-        </image>"""
 
         # Get a list of all episodes
         episodeList = parseAllEpisodeInfo(targetFeed)
@@ -99,15 +113,10 @@ def fetchAllFeeds(audioDownloader):
         episodeFilenames.add(thumbnailName)
         episodeFilenames.add("feed.txt")
 
+        newFeedItems = ""
         # For each episode
         for episode in episodeList:
-            newFeed += f"""
-        <item>
-            <title>{episode['title']}</title>
-            <pubDate>{episode['pubDate']}</pubDate>
-            <guid isPermaLink="false">{episode['guid']}</guid>
-            <description>{episode['description']}</description>"""
-
+            enclosure = ""
             if episode["enclosure"] is not None:
                 # Create file name
                 # Get the file extension at the end of the url
@@ -129,12 +138,11 @@ def fetchAllFeeds(audioDownloader):
 
                 # Add the episode filename to the set
                 episodeFilenames.add(episodeFilename)
+                # Create the enclosure for the file
+                enclosure = enclosureTemplate.substitute(url=newFeedUrl + "/" + episodeFilename, length=episode['enclosure']['length'], type=episode['enclosure']['type'])
 
-                # Add the episode information
-                newFeed += f"""
-            <enclosure url="{newFeedUrl}/{episodeFilename}" length="{episode['enclosure']['length']}" type="{episode['enclosure']['type']}"/>"""
-            newFeed += """
-        </item>"""
+            # Add the episode information
+            newFeedItems += itemTemplate.substitute(title=episode['title'], pubDate=episode['pubDate'], guid=episode['guid'], description=episode['description'], enclosure=enclosure)
 
         # Clear out old files
         if feedLink in config["Main"]["cleanupFeeds"].split(","):
@@ -146,9 +154,9 @@ def fetchAllFeeds(audioDownloader):
         if noNewEpisodes:
             print(f"[{getTime()}] No new episodes for {headers['title']}")
 
-        newFeed += """
-    </channel>
-</rss>"""
+        newFeed = feedTemplate.substitute(title=headers["title"], link=newFeedUrl, description=headers["description"],
+            imageUrl=newFeedUrl + "/" + thumbnailName, imageTitle=headers["image"]["title"], items=newFeedItems, imageLink=newFeedUrl)
+
         print(f"[{getTime()}] {headers['title']} feed created")
 
         # Save the new feed
