@@ -69,13 +69,9 @@ while "Congratulations. This browser is configured to use Tor." not in torCheckR
     torCheckReturn = getPage("https://check.torproject.org/")
 print(f"[{getTime()}] Tor check succeeded!")
 
-def fetchAllFeeds(audioDownloader):
-    # Get the target feed links
-    feedList = open("data/feeds.txt", "r")
 
-    # For each feed
-    for feedLink in feedList:
-        feedLink = feedLink.strip()
+class podcastFetch(threading.Thread):
+    def fetchFeed(self, feedLink, audioDownloader):
         print(f"[{getTime()}] Getting feed: {feedLink}")
         # Get the feed
         targetFeed = getPage(feedLink)
@@ -118,11 +114,11 @@ def fetchAllFeeds(audioDownloader):
         for episode in episodeList:
             enclosure = ""
             if episode["enclosure"] is not None:
-                # Create file name
                 # Get the file extension at the end of the url
                 # Remove any GET parameters
                 episodeFileExtension = episode["enclosure"]["url"].split("?")[0]
                 episodeFileExtension = episodeFileExtension.split(".")[-1]
+                # Create file name
                 # Make sure the file name only has alphanumeric characters
                 episodeFilename = makeAlphanumeric(episode["title"])
                 if len(episodeFilename) > 250:
@@ -164,12 +160,18 @@ def fetchAllFeeds(audioDownloader):
             feedFile.write(newFeed)
 
 
-class podcastFetch(threading.Thread):
     def run(self):
         audioDownloader = AudioDownloader()
         while True:
             try:
-                fetchAllFeeds(audioDownloader)
+                # Get the target feed links
+                feedList = open("data/feeds.txt", "r")
+
+                # Fetch each feed
+                for feedLink in feedList:
+                    feedLink = feedLink.strip()
+                    self.fetchFeed(feedLink, audioDownloader)
+
                 time.sleep(int(config["Main"]["refreshInterval"]))
             except:
                 print(traceback.format_exc())
